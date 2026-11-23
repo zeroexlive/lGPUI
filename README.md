@@ -19,20 +19,33 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the two compare.
 
 ## Setup
 
-1. Create a **custom app** at <https://open.larksuite.com/app> (or open.feishu.cn), enable the **Bot** feature.
-2. Grant the scopes `im:chat:readonly`, `im:message`, `im:message:send_as_bot`, and
-   `im:message.group_msg` (read group messages), then publish the version.
-3. Add the bot to the group chats you want to see.
-4. Run:
+### Option A: sign in with the official lark-cli (recommended, no manual app setup)
+
+lGPUI can drive the official [lark-cli](https://github.com/larksuite/cli). It creates
+the Open Platform app for you in one browser click and signs you in as **yourself**,
+so you see your own chats and messages are sent as you. Tokens stay in your OS keychain.
 
 ```bash
-export LARK_APP_ID=cli_xxx
-export LARK_APP_SECRET=xxxx
-export LARK_DOMAIN=lark      # or: feishu
+npx @larksuite/cli@latest install
+lark-cli config init --new          # one-click app creation in the browser
+lark-cli auth login --recommend     # OAuth login as you
+cargo run --release                 # lGPUI detects lark-cli automatically
+```
+
+`LARK_CLI=/path/to/lark-cli` overrides the binary, `LARK_CLI_AS=bot` acts as the bot.
+
+### Option B: your own custom app (bot identity)
+
+1. Create a **custom app** at <https://open.larksuite.com/app> (or open.feishu.cn) and enable **Bot**.
+2. Grant `im:chat:readonly`, `im:message`, `im:message:send_as_bot`, `im:message.group_msg`, then publish.
+3. Add the bot to the chats you want to see, and run:
+
+```bash
+export LARK_APP_ID=cli_xxx LARK_APP_SECRET=xxxx LARK_DOMAIN=lark   # or feishu
 cargo run --release
 ```
 
-Without the two credentials, lGPUI starts in demo mode with sample chats.
+Order of detection: app credentials, then a signed-in lark-cli, then an offline demo.
 
 ### Linux build dependencies
 
@@ -55,7 +68,8 @@ Code layout:
 
 | Path | Purpose |
 |---|---|
-| `src/api.rs` | Open Platform client: tenant token cache, chats, messages, send |
+| `src/api.rs` | Open Platform REST client and backend selection |
+| `src/cli.rs` | Backend driving the official lark-cli (user identity) |
 | `src/model.rs` | Chat / message types, rich-text flattening |
 | `src/store.rs` | UI-independent state (selection, filter, composer) |
 | `src/main.rs` | GPUI window, sidebar, conversation, keyboard handling |

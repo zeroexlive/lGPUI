@@ -195,3 +195,51 @@ fn unwrap_envelope<T>(env: Envelope<T>) -> Result<T> {
     }
     env.data.ok_or_else(|| ApiError::Decode("missing `data`".into()))
 }
+
+/// Where lGPUI gets its data from.
+pub enum Backend {
+    /// Direct REST calls with a custom app's ID/secret (acts as the bot).
+    Rest(LarkClient),
+    /// The official `lark-cli`, signed in as you (see `crate::cli`).
+    Cli(crate::cli::CliClient),
+}
+
+impl Backend {
+    /// `LARK_APP_ID`/`LARK_APP_SECRET` win; otherwise a signed-in `lark-cli`;
+    /// otherwise `None` (demo mode).
+    pub fn detect() -> Option<Self> {
+        if let Some(cfg) = Config::from_env() {
+            return Some(Backend::Rest(LarkClient::new(cfg)));
+        }
+        let cli = crate::cli::CliClient::from_env();
+        cli.is_ready().then_some(Backend::Cli(cli))
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            Backend::Rest(_) => "bot",
+            Backend::Cli(_) => "lark-cli",
+        }
+    }
+
+    pub fn list_chats(&self, max_pages: usize) -> Result<Vec<Chat>> {
+        match self {
+            Backend::Rest(c) => c.list_chats(max_pages),
+            Backend::Cli(c) => c.list_chats(max_pages),
+        }
+    }
+
+    pub fn list_messages(&self, chat_id: &str, limit: usize) -> Result<Vec<Message>> {
+        match self {
+            Backend::Rest(c) => c.list_messages(chat_id, limit),
+            Backend::Cli(c) => c.list_messages(chat_id, limit),
+        }
+    }
+
+    pub fn send_text(&self, chat_id: &str, text: &str) -> Result<Message> {
+        match self {
+            Backend::Rest(c) => c.send_text(chat_id, text),
+            Backend::Cli(c) => c.send_text(chat_id, text),
+        }
+    }
+}
