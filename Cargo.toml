@@ -1,0 +1,36 @@
+[package]
+name = "lgpui"
+version = "0.1.0"
+edition = "2024"
+description = "A clean-room, native Lark/Feishu messenger client written in Rust with GPUI"
+license = "MIT"
+repository = "https://github.com/zeroexlive/lGPUI"
+default-run = "lgpui"
+
+[lib]
+name = "lgpui"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lgpui"
+path = "src/main.rs"
+required-features = ["ui"]
+
+[features]
+default = ["ui"]
+ui = ["dep:gpui"]
+
+[dependencies]
+gpui = { version = "0.2.2", optional = true }
+ureq = { version = "2.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+
+[dev-dependencies]
+mockito = "1.6"
+
+# xattr 0.2.3 (pulled in by gpui's http client) references libc::ENOATTR, which
+# recent libc releases no longer export on Linux. ENOATTR == ENODATA on Linux.
+[patch.crates-io]
+xattr = { path = "vendor/xattr" }
