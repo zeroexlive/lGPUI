@@ -8,8 +8,7 @@ use gpui::{
     Window, WindowBounds, WindowOptions, div, prelude::*, px, rgb, size,
 };
 
-use lgpui::api::LarkClient;
-use lgpui::config::Config;
+use lgpui::api::Backend;
 use lgpui::demo;
 use lgpui::model::{Chat, Message, format_hhmm};
 use lgpui::store::{Status, Store};
@@ -41,15 +40,14 @@ enum InputTarget {
 
 struct LarkApp {
     store: Store,
-    client: Option<Arc<LarkClient>>,
+    client: Option<Arc<Backend>>,
     focus: FocusHandle,
     target: InputTarget,
 }
 
 impl LarkApp {
     fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let config = Config::from_env();
-        let client = config.map(|c| Arc::new(LarkClient::new(c)));
+        let client = Backend::detect().map(Arc::new);
         let focus = cx.focus_handle();
         window.focus(&focus);
         let mut this = Self {
@@ -255,7 +253,7 @@ impl LarkApp {
                         div()
                             .text_xs()
                             .text_color(rgb(theme::SIDEBAR_MUTED))
-                            .child(if self.store.offline { "demo" } else { "online" }),
+                            .child(self.client.as_ref().map_or("demo", |c| c.label())),
                     ),
             )
             .child(
